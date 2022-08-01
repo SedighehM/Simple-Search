@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.4.1/dist/css/bootstrap.min.css"
+        integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+    <style>
+        input {
+            width: 300px;
+            height: 40px;
+            border-radius: 10px 0px 0px 10px
+        }
+        .input-group {
+            padding: 10px
+        }
+        div h5 {
+            display: inline-block;
+            padding: 1px;
+
+        }
+        div h4 {
+            display: inline-block;
+            padding: 4px;
+        }
+        .error {
+            color: red;
+            visibility: hidden;
+        }
+        .dimColor {
+            color: #696969
+        }
+        .boldFont {
+            font-weight: bold;
+        }
+    </style>
+    <script>
+        labels = { "Range": ["Low", " - ", "High"], "Open": "Open", "Volume": "Volume", "Market Cap": "MarketCap" }
+        validSecurity = ["MSFT", "AAPL", "INFO", "BRKA", "F", "PLT", "BIG", "TWX", "AME", "JWN", "CVS", "MS", "MET"]
+        async function loadData() {
+            clearData()
+            //Due to invalid security, we show and hide error messages
+            document.getElementsByClassName("error")[0].style["visibility"] = "hidden"
+            let inpt = document.getElementById("userInput").value
+            if (validSecurity.indexOf(inpt.toUpperCase()) === -1) {
+                document.getElementsByClassName("error")[0].style["visibility"] = "visible"
+                return
+            }
+            //Send request by defined method
+            const response = await getQuote(inpt)
+            createHeader(response.data)
+            createTable(labels, response.data)
+        }
+        //This method fill the header segment with appropriate values
+        function createHeader(data) {
+            setText("name", data.Name.toUpperCase())
+            setText("symbol", "(" + data.Symbol + ")")
+            setText("lastPrice", data.LastPrice)
+
+            if (data.Change > 0) {
+                setText("change", "+" + data.Change.toFixed(2))
+                document.getElementById("change").style.color = "green"
+            } else {
+                setText("change", data.Change.toFixed(2))
+                document.getElementById("change").style.color = "red"
+            }
+            if (data.ChangePercent > 0) {
+                setText("changePercent", " (+" + data.ChangePercent.toFixed(2) + "%)")
+                document.getElementById("changePercent").style.color = "green"
+            } else {
+                setText("changePercent", " (" + data.ChangePercent.toFixed(2) + "%)")
+                document.getElementById("changePercent").style.color = "red"
+            }
+
+            const time =
+                data.Timestamp.toLocaleString('en-US', { hour: 'numeric', minute: 'numeric', second: 'numeric', hour12: true })
+            setText("timeStamp", "As of " + time + " ET")
+        }
+
+        //This method fill the table with appropriate values
+        function createTable(labels, data) {
+            const tableBody = document.querySelector("tbody")
+            for (var key in labels) {
+                if (data[labels[key]] !== null) {
+                    const rowElement = document.createElement("tr")
+                    const td1 = document.createElement("td")
+                    td1.textContent = key
+                    td1.classList.add('dimColor')
+                    const td2 = document.createElement("td")
+                    if (typeof labels[key] === "object") {
+                        const arrayValue = labels[key]
+                        let finalValue = ""
+                        arrayValue.forEach(item => {
+                            data[item] ? finalValue = finalValue + data[item] :
+                                finalValue = finalValue + item
+                        });
+                        td2.textContent = finalValue
+                    } else if (data[labels[key].toString()] >= 1000000000) {
+                        td2.textContent = (data[labels[key].toString()] / 1000000000).toFixed(1) + "B"
+                    }
+                    else if (data[labels[key].toString()] >= 1000000) {
+                        td2.textContent = (data[labels[key].toString()] / 1000000).toFixed(1) + "M"
+                    }
+                    else {
+                        td2.textContent = data[labels[key].toString()]
+                    }
+                    td2.classList.add('boldFont')
+                    rowElement.appendChild(td1)
+                    rowElement.appendChild(td2)
+                    tableBody.appendChild(rowElement)
+                }
+
+            }
+        }
+        //This method clears previously loaded data
+        function clearData() {
+            document.querySelector("tbody").innerHTML = ""
+            document.getElementById("name").innerHTML = ""
+            document.getElementById("symbol").innerHTML = ""
+            document.getElementById("lastPrice").innerHTML = ""
+            document.getElementById("change").innerHTML = ""
+            document.getElementById("changePercent").innerHTML = ""
+            document.getElementById("timeStamp").innerHTML = ""
+        }
+        //This method set the text of an element with passed id and value
+        function setText(elementId, value) {
+            document.getElementById(elementId).innerHTML = value
+        }
+    </script>
+</head>
+
+<body>
+    <div class="input-group">
+        <input id="userInput" type="text" class="" placeholder="Symbol Lookup">
+        <div class="input-group-append">
+            <span class="input-group-text"><i onclick="loadData()" class="fa fa-search"></i></span>
+        </div>
+    </div>
+    <p class="error">The Symbol is invalid</p>
+    <hr />
+    <div>
+        <div>
+            <h5 class="dimColor" id="name"></h5>
+            <span class="dimColor" id="symbol"><span>
+        </div>
+        <div>
+            <h4 id="lastPrice"></h4>
+            <span id="change"></span>
+            <span id="changePercent"></span>
+        </div>
+        <div class="dimColor" id="timeStamp"></div>
+    </div>
+    <table class="table">
+        <tbody></tbody>
+    </table>
+</body>
+</html>
